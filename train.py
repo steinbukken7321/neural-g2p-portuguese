@@ -12,6 +12,9 @@ from utils.data import ParserLexicon, collate_fn
 from model import Encoder, Decoder
 from utils.config import DataConfig, ModelConfig, TrainConfig
 
+# to save results
+os.makedirs('checkpoints', exist_ok=True)
+
 # data prep
 ds = ParserLexicon(
         DataConfig.graphemes_path,
