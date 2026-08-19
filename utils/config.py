@@ -15,10 +15,10 @@ class DataConfig(object):
 
 
 class ModelConfig(object):
-    with open(DataConfig.graphemes_path) as f:
+    with open(DataConfig.graphemes_path, encoding='utf-8') as f:
         graphemes_size = len(json.load(f))
 
-    with open(DataConfig.phonemes_path) as f:
+    with open(DataConfig.phonemes_path, encoding='utf-8') as f:
         phonemes_size = len(json.load(f))
 
     hidden_size = 256
