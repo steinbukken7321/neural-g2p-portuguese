@@ -8,7 +8,7 @@ from torch.utils.data import Dataset, DataLoader
 
 class ParserLexicon(Dataset):
     def __init__(self, inputs, outputs, dict_path):
-        with open(inputs, encoding='utf-8') as fi, open(outputs, encoding='utf-8') as fo, open(dict_path, encoding='utf-8'  ) as fd:
+        with open(inputs, encoding='utf-8', encoding='utf-8') as fi, open(outputs, encoding='utf-8', encoding='utf-8') as fo, open(dict_path, encoding='utf-8'  , encoding='utf-8') as fd:
             graphemes = json.load(fi)
             phonemes = json.load(fo)
             self.lexicon = json.load(fd)
