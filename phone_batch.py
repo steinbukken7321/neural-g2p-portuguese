@@ -32,7 +32,7 @@ def text2phone(text, language):
 
 def get_list(path):
     new_l = []
-    with open(path,'r') as list_file:
+    with open(path,'r', encoding='utf-8') as list_file:
         for row in list_file:
             if row:
                 new_l.append(row.strip())
@@ -40,7 +40,7 @@ def get_list(path):
     
 def from_list_file(list_phone,file_name):
     
-    new_f = open(file_name,"w+")
+    new_f = open(file_name,"w+", encoding='utf-8')
     for item in list_phone:
         new_f.write(item+'\n')
     new_f.close()
