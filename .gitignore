@@ -131,3 +131,6 @@ dmypy.json
 
 # Attention visualizations
 attention/
+
+# CSV with lexicons
+data/
