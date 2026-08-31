@@ -1,18 +1,16 @@
 #!/usr/bin/env python3
-
 import os
 import argparse
 
-# Configura o argumento --sotaque para escolher qual modelo regional testar
 parser = argparse.ArgumentParser(description='Inferência do modelo G2P por sotaque/região.')
-parser.add_argument('--sotaque', type=str, default=None, help='Nome do sotaque/região para inferência (ex: spx, rjx)')
-parser.add_argument('--sentence', type=str, required=True, help='Frase para gerar a pronúncia')
-parser.add_argument('--visualize', action='store_true', help='Salvar matriz de atenção')
+parser.add_argument('--sotaque', type=str, default=None,
+                     help='Código do sotaque/região para inferência (ex: spx, rjx)')
+parser.add_argument('--sentence', type=str, default='olá, vamos testar esse projeto.')
+parser.add_argument('--visualize', action='store_true')
 args = parser.parse_args()
 
-# Se um sotaque foi passado via terminal, atualiza a variável de ambiente antes de importar o config
 if args.sotaque:
-    os.environ['LANGUAGE'] = args.sotaque
+    os.environ['SOTAQUE'] = args.sotaque
 
 import torch
 import torch.nn as nn
@@ -23,71 +21,73 @@ from model import Encoder, Decoder
 from utils.config import DataConfig, ModelConfig, TestConfig
 from utils.text_tools import tokenize_pt
 
-# Carrega os dados e o vocabulário baseados no sotaque ativo
-ds = ParserLexicon(
-    DataConfig.graphemes_path,
-    DataConfig.phonemes_path,
-    DataConfig.lexicon_path
-)
 
-encoder_model = Encoder(
-    ModelConfig.graphemes_size,
-    ModelConfig.hidden_size
-).to(TestConfig.device)
-encoder_model.load_state_dict(torch.load(TestConfig.encoder_model_path, map_location=TestConfig.device))
-encoder_model.eval()
+def load_model(model_path, model):
+    model.load_state_dict(torch.load(
+        model_path, map_location=lambda storage, loc: storage
+    ))
+    model.to(TestConfig.device)
+    model.eval()
+    return model
 
-decoder_model = Decoder(
-    ModelConfig.phonemes_size,
-    ModelConfig.hidden_size
-).to(TestConfig.device)
-decoder_model.load_state_dict(torch.load(TestConfig.decoder_model_path, map_location=TestConfig.device))
-decoder_model.eval()
 
-# Processamento da frase de entrada
-words = tokenize_pt(args.sentence)
-phonemes_result = []
+class G2P(object):
+    def __init__(self):
+        self.ds = ParserLexicon(
+            DataConfig.graphemes_path,
+            DataConfig.phonemes_path,
+            DataConfig.lexicon_path
+        )
+        self.encoder_model = Encoder(ModelConfig.graphemes_size, ModelConfig.hidden_size)
+        load_model(TestConfig.encoder_model_path, self.encoder_model)
+        self.decoder_model = Decoder(ModelConfig.phonemes_size, ModelConfig.hidden_size)
+        load_model(TestConfig.decoder_model_path, self.decoder_model)
 
-for word in words:
-    if word in ds.graphemes2idx:
-        g = ds.graphemes2idx[word].unsqueeze(1).to(TestConfig.device)
-        
+    def __call__(self, word, visualize):
+        x = [0] + [self.ds.g2idx[ch] for ch in word] + [1]
+        x = torch.tensor(x).long().unsqueeze(1)
         with torch.no_grad():
-            enc = encoder_model(g)
-            T, N = 1, 1
-            hidden = torch.ones(1, N, ModelConfig.hidden_size).to(TestConfig.device)
-            decoder_input = torch.tensor([[ds.sos_idx]], device=TestConfig.device)
-            
-            decoded_phonemes = []
-            attentions = []
-            
-            for _ in range(100):  # Limite máximo de tamanho de saída
-                out, hidden, attention = decoder_model(decoder_input, enc, hidden)
-                attentions.append(attention.squeeze(0).cpu())
-                
-                pred_idx = out.argmax(dim=-1).item()
-                if pred_idx == ds.eos_idx:
-                    break
-                
-                decoded_phonemes.append(ds.idx2phonemes[pred_idx])
-                decoder_input = torch.tensor([[pred_idx]], device=TestConfig.device)
-                
-            phonemes_result.append('|'.join(decoded_phonemes))
-            
-            # Visualização da atenção (separada por pasta de sotaque)
-            if args.visualize and attentions:
-                attentions = torch.stack(attentions).numpy()
-                plt.figure(figsize=(10, 6))
-                plt.imshow(attentions, aspect='auto', origin='lower')
-                plt.xlabel('Encoder Timesteps (Graphemes)')
-                plt.ylabel('Decoder Timesteps (Phonemes)')
-                plt.title(f'Attention Weights - Sotaque: {DataConfig.language}')
-                plt.colorbar()
-                
-                os.makedirs(f'attention/{DataConfig.language}', exist_ok=True)
-                plt.savefig(f'attention/{DataConfig.language}/{word}.png')
-                plt.close()
-    else:
-        phonemes_result.append(word)
+            enc = self.encoder_model(x)
+        phonemes, att_weights = [], []
+        x = torch.zeros(1, 1).long().to(TestConfig.device)
+        hidden = torch.ones(1, 1, ModelConfig.hidden_size).to(TestConfig.device)
+        while True:
+            with torch.no_grad():
+                out, hidden, att_weight = self.decoder_model(x, enc, hidden)
+            att_weights.append(att_weight.detach().cpu())
+            max_index = out[0, 0].argmax()
+            x = max_index.unsqueeze(0).unsqueeze(0)
+            phonemes.append(self.ds.idx2p[max_index.item()])
+            if max_index.item() == 1:
+                break
+        if visualize:
+            att_weights = torch.cat(att_weights).squeeze(1).numpy().T
+            y, x = att_weights.shape
+            plt.imshow(att_weights, cmap='gray')
+            plt.yticks(range(y), ['<sos>'] + list(word) + ['<eos>'])
+            plt.xticks(range(x), phonemes)
+            os.makedirs(f'attention/{DataConfig.sotaque}', exist_ok=True)
+            plt.savefig(f'attention/{DataConfig.sotaque}/{word}.png')
+        return phonemes
 
-print(' '.join(phonemes_result))
+
+def is_ponctuation(token):
+    return token in ['.', '?', '!', ',', ':', ';']
+
+
+def inference(sentence, char_separator='|', visualize=False):
+    tokens = tokenize_pt(sentence)
+    g2p = G2P()
+    phone_phrase = ""
+    for item in tokens:
+        if is_ponctuation(item):
+            phone_phrase += char_separator + item + char_separator + " "
+        else:
+            result = g2p(item, visualize)[:-1]
+            phoneme = char_separator + char_separator.join(result) + char_separator
+            phone_phrase += phoneme + " "
+    return phone_phrase.strip()[1:-1]
+
+
+if __name__ == '__main__':
+    print(inference(args.sentence, char_separator='|', visualize=args.visualize))
