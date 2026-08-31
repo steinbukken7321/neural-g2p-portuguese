@@ -1,4 +1,3 @@
-```markdown
 # Neural G2P to portuguese language
 
 Grapheme-to-phoneme (G2P) conversion is the process of generating pronunciation for words based on their written form. It has a highly essential role for natural language processing, text-to-speech synthesis and automatic speech recognition systems. This project was adapted from [https://github.com/hajix/G2P](https://github.com/hajix/G2P).
@@ -107,4 +106,3 @@ python phone_batch.py --sotaque spx --list_path list.txt
 ## License
 
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
-```
