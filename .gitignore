@@ -134,3 +134,6 @@ attention/
 
 # CSV with lexicons
 data/
+
+# Debug with codes to explain
+debug/
