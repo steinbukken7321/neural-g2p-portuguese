@@ -7,6 +7,8 @@ parser.add_argument('--sotaque', type=str, default=None,
                      help='Código do sotaque/região para inferência (ex: spx, rjx)')
 parser.add_argument('--sentence', type=str, default='olá, vamos testar esse projeto.')
 parser.add_argument('--visualize', action='store_true')
+parser.add_argument('--format', type=str, default='ipa', choices=['ipa', 'xsampa'],
+                     help='Formato de saída fonética (ipa ou xsampa)')
 args = parser.parse_args()
 
 if args.sotaque:
@@ -20,6 +22,7 @@ from utils.data import ParserLexicon
 from model import Encoder, Decoder
 from utils.config import DataConfig, ModelConfig, TestConfig
 from utils.text_tools import tokenize_pt
+from utils.phonetic_maps import convert_to_xsampa
 
 
 def load_model(model_path, model):
@@ -72,10 +75,10 @@ class G2P(object):
 
 
 def is_ponctuation(token):
-    return token in ['.', '?', '!', ',', ':', ';']
+    return token in ['.', '!', '?', ',', ':', ';']
 
 
-def inference(sentence, char_separator='|', visualize=False):
+def inference(sentence, char_separator='|', visualize=False, output_format='ipa'):
     tokens = tokenize_pt(sentence)
     g2p = G2P()
     phone_phrase = ""
@@ -86,8 +89,15 @@ def inference(sentence, char_separator='|', visualize=False):
             result = g2p(item, visualize)[:-1]
             phoneme = char_separator + char_separator.join(result) + char_separator
             phone_phrase += phoneme + " "
-    return phone_phrase.strip()[1:-1]
+    
+    final_output = phone_phrase.strip()[1:-1]
+    
+    # Aplica a conversão apenas se solicitado X-SAMPA
+    if output_format == 'xsampa':
+        final_output = convert_to_xsampa(final_output)
+        
+    return final_output
 
 
 if __name__ == '__main__':
-    print(inference(args.sentence, char_separator='|', visualize=args.visualize))
+    print(inference(args.sentence, char_separator='|', visualize=args.visualize, output_format=args.format))
