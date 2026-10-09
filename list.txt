@@ -1,0 +1,10 @@
+exame
+manga
+casa
+fixo
+chuvoso
+desenvolvimento
+inteligencia
+neural
+grapheme
+phoneme

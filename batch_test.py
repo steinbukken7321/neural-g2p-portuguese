@@ -3,11 +3,13 @@ import os
 import argparse
 
 parser = argparse.ArgumentParser(description='Teste em lote do modelo G2P por sotaque/região.')
-parser.add_argument('--sotaque', type=str, default=None,
-                     help='Código do sotaque/região para teste (ex: spx, rjx)')
+# Define 'spx' como sotaque padrão caso nenhum seja informado
+parser.add_argument('--sotaque', type=str, default='spx',
+                    help='Código do sotaque/região para teste (ex: spx, rjx). Padrão: spx')
 parser.add_argument('--visualize', action='store_true')
 parser.add_argument('--list_path', type=str, default='list.txt')
-parser.add_argument('--output_path', type=str, default='new_ipa.txt')
+# Define None no default para podermos criar o nome dinâmico depois
+parser.add_argument('--output_path', type=str, default=None)
 args = parser.parse_args()
 
 if args.sotaque:
@@ -83,6 +85,20 @@ def from_list_file(list_phone, file_name):
 
 
 if __name__ == '__main__':
+    # 1. Avisa explicitamente no terminal qual sotaque está sendo processado
+    print(f"--- Processando com sotaque: {DataConfig.sotaque.upper()} ---")
+
+    # 2. Garante a criação da pasta 'results'
+    os.makedirs('results', exist_ok=True)
+
+    # 3. Lógica do nome dinâmico para o arquivo de saída
+    if args.output_path is None:
+        filename = f"resultado_{DataConfig.sotaque}.txt"
+    else:
+        filename = os.path.basename(args.output_path)
+
+    final_output_path = os.path.join('results', filename)
+
     l = get_list(args.list_path)
     n_l = []
     g2p = G2P()
@@ -90,4 +106,6 @@ if __name__ == '__main__':
         result = g2p(item, args.visualize)
         print(item + "  " + " ".join(result[:-1]))
         n_l.append(item + "  " + " ".join(result[:-1]))
-    from_list_file(n_l, args.output_path)
+        
+    from_list_file(n_l, final_output_path)
+    print(f"--- Resultado salvo em: {final_output_path} ---")
