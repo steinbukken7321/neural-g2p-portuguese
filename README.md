@@ -71,7 +71,7 @@ tensorboard --logdir log --bind_all
 
 Training parameters could be found at `utils/config.py`.
 
-### Inference
+## Inference
 
 To get the pronunciation of a sentence using a specific trained regional model, pass the `--sotaque` flag during inference:
 
@@ -89,20 +89,74 @@ python inference.py --sotaque spx --visualize --sentence 'olá, vamos testar ess
 o|l|a| |,| |v|a|m|ʊ|s| |t|e|s|t|a| |e|s|i| |p|ɾ|o|ʒ|e|t|ʊ| |.
 ```
 
-### Utilities
+#### Output format: IPA or X-SAMPA
 
-`batch_test.py` runs the trained model over a list of words (`list.txt` by default) and writes the results to a file, also scoped by `--sotaque`:
-
-```
-python batch_test.py --sotaque spx --list_path list.txt --output_path new_ipa.txt
-```
-
-`phone_batch.py` generates phonemes for a word list using `phonemizer`/`espeak` instead of the trained model — useful as an external reference baseline. Note that espeak-ng only distinguishes European (`pt`) from Brazilian (`pt-br`) Portuguese, so regions are mapped to the closest available variant:
+The `--format` flag selects the notation of the output: `ipa` (default) or `xsampa`.
 
 ```
-python phone_batch.py --sotaque spx --list_path list.txt
+# IPA (default, same as omitting --format)
+python inference.py --sotaque spx --format ipa --sentence 'olá, vamos testar esse projeto.'
+o|l|a| |,| |v|a|m|ʊ|s| |t|e|s|t|a| |e|s|i| |p|ɾ|o|ʒ|e|t|ʊ| |.
+
+# X-SAMPA
+python inference.py --sotaque spx --format xsampa --sentence 'olá, vamos testar esse projeto.'
+o|l|a| |,| |v|a|m|U|s| |t|e|s|t|a| |e|s|i| |p|4|o|Z|e|t|U| |.
 ```
 
-## License
+The model always predicts IPA; X-SAMPA is produced from it by the one-to-one mapping in `utils/phonetic_maps.py`, so both outputs have the same number of tokens. Spaces and punctuation are kept as they are.
+
+Sim, é necessário fazer pequenas atualizações para deixar a documentação 100% alinhada com as últimas mudanças do projeto:
+
+1. **Nome padrão do arquivo de saída em `Batch Testing & Utilities**`: Atualizar de `results/transcricoes_ipa.txt` para `results/resultado_<sotaque>.txt` (ex: `results/resultado_spx.txt`), informando que o sotaque padrão agora é `spx`.
+2. **Remoção de referências legadas em `Tests debug**`: Remover a menção a `phone_batch.py` (já deletado) e atualizar `test_all.py` para `test_all_accents.py` (conforme exibido na árvore de arquivos da sua IDE).
+
+---
+
+### Batch Testing & Utilities
+
+`batch_test.py` executes the trained model over a list of words (`list.txt` by default) for a specified regional accent (`--sotaque`, defaulting to `spx`). Output files are automatically saved into the `/results` directory with the accent code embedded in the filename:
+
+```bash
+# Basic batch test (defaults to --sotaque spx, outputs to results/resultado_spx.txt)
+python batch_test.py
+
+# Batch test specifying accent, custom output filename, and attention map generation
+python batch_test.py --sotaque rjx --list_path list.txt --output_path meu_resultado.txt --visualize
+
+```
+
+**Available Options:**
+
+* `--sotaque`: Regional accent code to evaluate (default: `spx`).
+* `--list_path`: Path to the input word list (default: `list.txt`).
+* `--output_path`: Filename for predictions saved in `/results` (default: `resultado_<sotaque>.txt`).
+* `--visualize`: Saves attention heatmaps for each word in `/attention/<sotaque>/`.
+
+---
+### Tests debug
+
+`test_all_accents.py` is a utility script that runs evaluation checks across regional models, testing both **IPA and X-SAMPA** outputs (plus `--visualize` and `batch_test.py`) and verifying the phonetic mappings:
+
+```bash
+# Test all available accent checkpoints
+python test_all_accents.py
+
+# Test specific regions
+python test_all_accents.py --regions spx rjx
+
+```
+
+For each region, it verifies that:
+
+* `inference.py --format ipa` retains spaces and punctuation;
+* `inference.py --format xsampa` produces a valid token-by-token mapped output;
+* `inference.py --visualize` generates attention heatmaps under `attention/<sotaque>/`;
+* `batch_test.py` creates structured predictions under `/results`.
+
+
+
+
+---
+### License
 
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
