@@ -7,7 +7,7 @@
 
 </div>
 
-🌐 **Idioma:** [🇧🇷 Português](https://www.google.com/search?q=README.pt-BR.md) | [🇺🇸 English](README.md)
+🌐 **Idioma:** [🇧🇷 Português](https://github.com/steinbukken7321/neural-g2p-portuguese/blob/main/README.pt-BR.md) | [🇺🇸 English](README.md)
 
 **ANG2P** (*Accent-aware Neural Grapheme-to-Phoneme*) é um projeto de conversão neural Grafema-Fonema (G2P) para o português brasileiro focado em variações regionais de sotaque/dialeto, interpretabilidade por meio do alinhamento de atenção e usabilidade prática para síntese de fala (TTS), reconhecimento automático de fala (ASR) e Processamento de Linguagem Natural (PLN).
 

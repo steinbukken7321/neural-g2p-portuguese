@@ -8,7 +8,7 @@
 </div>
 
 
-🌐 **Language:** [🇺🇸 English](README.md) | [🇧🇷 Português](https://www.google.com/search?q=README.pt-BR.md)
+🌐 **Language:** [🇺🇸 English](README.md) | [🇧🇷 Português](https://github.com/steinbukken7321/neural-g2p-portuguese/blob/main/README.pt-BR.md)
 
 **ANG2P** (*Accent-aware Neural Grapheme-to-Phoneme*) is a neural Grapheme-to-Phoneme (G2P) project for Brazilian Portuguese focused on regional accent/dialect variation, interpretability through attention alignment, and practical usability for text-to-speech synthesis (TTS), automatic speech recognition (ASR), and Natural Language Processing (NLP).
 
